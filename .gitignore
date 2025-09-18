@@ -1,0 +1,15 @@
+# Allure
+allure_results/
+allure_report/
+
+# Кэш Python
+__pycache__/
+*.pyc
+
+# Virtual environment
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
