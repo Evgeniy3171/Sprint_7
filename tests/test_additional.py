@@ -1,32 +1,36 @@
+import allure
 import pytest
 import requests
-import random
 from configuration import BASE_URL
-from helpers.courier import register_new_courier, delete_courier, login_courier
-from helpers.order import create_order, cancel_order, get_order_by_track
+from helpers.courier import login_courier
+from helpers.order import get_order_by_track
 
 class TestAdditional:
-    def test_delete_courier_success(self):
-        courier = register_new_courier()
+    @allure.title("Успешное удаление курьера")
+    def test_delete_courier_success(self, create_and_delete_courier):
+        """Тест успешного удаления курьера с использованием фикстуры"""
+        courier = create_and_delete_courier
         login_response = login_courier(courier['login'], courier['password'])
         courier_id = login_response.json()['id']
         
         response = requests.delete(f'{BASE_URL}/api/v1/courier/{courier_id}')
+        
+        # Проверяем статус код и содержимое ответа
         assert response.status_code == 200
         assert response.json() == {"ok": True}
 
-    def test_accept_order_success(self):
-        # Создадим курьера
-        courier = register_new_courier()
+    @allure.title("Успешное принятие заказа курьером")
+    def test_accept_order_success(self, create_and_delete_courier, create_and_cancel_order):
+        """Тест успешного принятия заказа с использованием фикстур"""
+        courier = create_and_delete_courier
+        order_data = create_and_cancel_order
+        
+        # Логинимся курьером
         login_response = login_courier(courier['login'], courier['password'])
         courier_id = login_response.json()['id']
         
-        # Создадим заказ
-        order_response = create_order()
-        order_track = order_response.json()['track']
-        
-        # Получим ID заказа по его track number
-        order_info_response = get_order_by_track(order_track)
+        # Получаем ID заказа по его track number
+        order_info_response = get_order_by_track(order_data['track'])
         order_id = order_info_response.json()['order']['id']
         
         # Принимаем заказ
@@ -34,22 +38,25 @@ class TestAdditional:
             f'{BASE_URL}/api/v1/orders/accept/{order_id}',
             params={"courierId": courier_id}
         )
+        
+        # Проверяем статус код и содержимое ответа
         assert response.status_code == 200
         assert response.json() == {"ok": True}
-        
-        # Отменяем заказ и удаляем курьера
-        cancel_order(order_track)
-        delete_courier(courier['login'], courier['password'])
 
-    def test_get_order_by_track_success(self):
-        # Создадим заказ
-        order_response = create_order()
-        order_track = order_response.json()['track']
+    @allure.title("Получение заказа по номеру трека")
+    def test_get_order_by_track_success(self, create_and_cancel_order):
+        """Тест успешного получения заказа по треку с использованием фикстуры"""
+        order_data = create_and_cancel_order
         
         # Получаем заказ по track number
-        response = get_order_by_track(order_track)
-        assert response.status_code == 200
-        assert 'order' in response.json()
+        response = get_order_by_track(order_data['track'])
         
-        # Отменяем заказ
-        cancel_order(order_track)
+        # Проверяем статус код и содержимое ответа
+        assert response.status_code == 200
+        response_data = response.json()
+        assert 'order' in response_data
+        # Дополнительные проверки содержимого заказа
+        order = response_data['order']
+        assert 'id' in order
+        assert 'track' in order
+        assert 'status' in order
