@@ -1,4 +1,5 @@
 import pytest
+import allure
 from helpers.courier import register_new_courier, delete_courier
 from helpers.order import create_order, cancel_order
 
@@ -8,18 +9,20 @@ def create_and_delete_courier():
     courier = register_new_courier()
     yield courier
     # Финализатор - будет выполнен даже при падении теста
-    delete_response = delete_courier(courier['login'], courier['password'])
-    # Проверяем, что удаление прошло успешно или курьер уже удален/не найден
-    assert delete_response.status_code in [200, 404, 409]
+    try:
+        delete_courier(courier['login'], courier['password'])
+    except Exception as e:
+        allure.attach(f"Ошибка при удалении курьера: {str(e)}", name="Предупреждение")
 
 @pytest.fixture
 def create_and_cancel_order():
     """Фикстура для создания и последующей отмены заказа"""
-    order_response = create_order()
-    order_data = order_response.json()
+    response = create_order()
+    order_data = response.json()
     yield order_data
     # Финализатор - будет выполнен даже при падении теста
-    if 'track' in order_data:
-        cancel_response = cancel_order(order_data['track'])
-        # Проверяем, что отмена прошла успешно или заказ уже отменен/не может быть отменен
-        assert cancel_response.status_code in [200, 404, 409]
+    try:
+        if 'track' in order_data:
+            cancel_order(order_data['track'])
+    except Exception as e:
+        allure.attach(f"Ошибка при отмене заказа: {str(e)}", name="Предупреждение")

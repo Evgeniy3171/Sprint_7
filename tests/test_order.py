@@ -1,12 +1,25 @@
-# tests/test_order.py
+import allure
 import pytest
 import requests
-from unittest.mock import patch
 from helpers.order import create_order, cancel_order
 
+@pytest.fixture
+def order_data(request):
+    color = request.param
+    response = create_order(color)
+    assert response.status_code == 201, f"Ошибка при создании заказа с цветом {color}: {response.text}"
+    data = response.json()
+    yield data
+    # Teardown: отменяем заказ
+    if 'track' in data:
+        cancel_order(data['track'])
+
+
 class TestOrderCreation:
+    @allure.title("Создание заказа с цветом: {color}")
     @pytest.mark.parametrize('color', [['BLACK'], ['GREY'], ['BLACK', 'GREY'], []])
     def test_create_order_with_different_colors(self, color, mocker):
+        """Тест создания заказа с разными цветами"""
         # Мокируем создание заказа
         mock_response = mocker.Mock()
         mock_response.status_code = 201

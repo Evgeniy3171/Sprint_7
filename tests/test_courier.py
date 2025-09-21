@@ -44,23 +44,15 @@ class TestCourierCreation:
         
         response = requests.post(f'{BASE_URL}/api/v1/courier', data=courier_data)
         
-        # Проверяем ответ сервера
-        if response.status_code == 201:
-            # Если курьер создан, проверяем успешный ответ и удаляем его
-            response_data = response.json()
-            assert response_data == {"ok": True}
-            
-            delete_response = delete_courier(login, password)
-            # Проверяем, что удаление прошло успешно
-            assert delete_response.status_code in [200, 404, 409]
-            if delete_response.status_code == 200:
-                assert delete_response.json() == {"ok": True}
-        else:
-            # Если сервер вернул ошибку, проверяем её содержание
-            assert response.status_code == 400
-            response_data = response.json()
-            assert "message" in response_data
-            assert "code" in response_data
+        # Сервер не требует firstName, поэтому проверяем успешное создание
+        assert response.status_code == 201
+        response_data = response.json()
+        assert response_data == {"ok": True}
+        
+        # Удаляем созданного курьера
+        delete_response = delete_courier(login, password)
+        assert delete_response.status_code == 200
+        assert delete_response.json() == {"ok": True}
 
     @allure.title("Создание дубликата курьера")
     def test_create_duplicate_courier(self, create_and_delete_courier):
