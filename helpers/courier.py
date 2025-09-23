@@ -75,9 +75,3 @@ def delete_courier(login, password):
         error_message = f"Ошибка обработки ответа сервера: {str(e)}"
         allure.attach(error_message, name="Ошибка обработки данных")
         raise Exception(error_message) from e
-        
-    except Exception as e:
-        # Ловим все остальные исключения, но логируем их как критические
-        error_message = f"Критическая ошибка при удалении курьера: {str(e)}"
-        allure.attach(error_message, name="Критическая ошибка")
-        raise Exception(error_message) from e

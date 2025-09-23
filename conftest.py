@@ -26,3 +26,26 @@ def create_and_cancel_order():
             cancel_order(order_data['track'])
     except Exception as e:
         allure.attach(f"Ошибка при отмене заказа: {str(e)}", name="Предупреждение")
+
+@pytest.fixture
+def create_and_cancel_order_with_color():
+    """Фикстура для создания заказа с цветом и последующей отмены"""
+    def _create_order(color=None):
+        response = create_order(color)
+        order_data = response.json()
+        return order_data, response
+    
+    orders_to_cancel = []
+    
+    def _register_for_cleanup(track_number):
+        orders_to_cancel.append(track_number)
+    
+    yield _create_order, _register_for_cleanup
+    
+    # Финализатор - отменяет все зарегистрированные заказы
+    for track_number in orders_to_cancel:
+        try:
+            if track_number:
+                cancel_order(track_number)
+        except Exception as e:
+            allure.attach(f"Ошибка при отмене заказа {track_number}: {str(e)}", name="Предупреждение")
